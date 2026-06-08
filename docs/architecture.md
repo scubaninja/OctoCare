@@ -40,12 +40,12 @@ OctoCare is a monorepo containing a customer support portal, API, and background
 - Migrations managed via EF Core
 - Seed data for demo scenarios
 
-#### Cloud Infrastructure (`infra/bicep/`)
-- Azure App Service for API
-- Azure Static Web Apps for frontend
-- Azure Database for PostgreSQL
-- Azure OpenAI Service
-- Azure Key Vault for secrets
+#### Cloud Infrastructure (`infra/terraform/`)
+- Azure App Service for the API and web frontend
+- Azure Container Apps for background workers
+- Azure Database for PostgreSQL Flexible Server
+- Azure OpenAI Service with a GPT-4o deployment
+- Azure Key Vault, Azure Storage, and Log Analytics for secrets, attachments, and monitoring
 
 ## Data Flow
 

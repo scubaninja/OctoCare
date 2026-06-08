@@ -22,7 +22,8 @@ support-hub/
 │   └── seed/
 ├── infra/
 │   ├── bicep/
-│   └── docker/
+│   ├── docker/
+│   └── terraform/
 ├── docs/
 └── docker-compose.yml
 ```
