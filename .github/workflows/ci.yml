@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-api:
+    name: Build API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore
+        working-directory: apps/api
+      - run: dotnet build --no-restore
+        working-directory: apps/api
+      - run: dotnet test --no-build
+        working-directory: apps/api
+
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+        working-directory: apps/web
+      - run: npm run build
+        working-directory: apps/web
+      - run: npm test
+        working-directory: apps/web
+
+  build-workers:
+    name: Build Workers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore
+        working-directory: services/ai-triage-worker
+      - run: dotnet build --no-restore
+        working-directory: services/ai-triage-worker
+      - run: dotnet restore
+        working-directory: services/sla-worker
+      - run: dotnet build --no-restore
+        working-directory: services/sla-worker

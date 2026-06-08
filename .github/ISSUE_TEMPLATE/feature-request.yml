@@ -1,0 +1,43 @@
+name: Feature Request
+description: Suggest a new feature for OctoCare
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please fill out the details below.
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: A clear description of the feature you'd like
+      placeholder: As a [user type], I want to [action] so that [benefit]
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Customer Portal
+        - Agent Dashboard
+        - API
+        - AI/ML Features
+        - Infrastructure
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: How will we know this feature is complete?
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any mockups, screenshots, or related issues

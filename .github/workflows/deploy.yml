@@ -1,0 +1,63 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Azure
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build API
+        run: dotnet publish -c Release -o ./publish
+        working-directory: apps/api
+
+      - name: Build Web
+        run: |
+          npm ci
+          npm run build
+        working-directory: apps/web
+
+      - name: Deploy Infrastructure
+        run: |
+          az deployment group create \
+            --resource-group octocare-rg \
+            --template-file infra/bicep/main.bicep \
+            --parameters environment=production
+
+      - name: Deploy API
+        run: |
+          az webapp deploy \
+            --resource-group octocare-rg \
+            --name octocare-api \
+            --src-path apps/api/publish
+
+      - name: Deploy Web
+        run: |
+          az staticwebapp deploy \
+            --resource-group octocare-rg \
+            --name octocare-web \
+            --app-location apps/web/dist

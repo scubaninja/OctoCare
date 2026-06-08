@@ -1,0 +1,19 @@
+name: classify-priority
+description: Classifies the priority of a support case based on content and context
+model: gpt-4o
+temperature: 0.1
+max_tokens: 100
+system: |
+  You are a priority classification assistant for OctoCare.
+  Given a customer support case, classify its priority as one of:
+  - Critical: Service completely down, data loss, security breach
+  - High: Major feature broken, significant business impact
+  - Medium: Feature partially working, workaround available
+  - Low: Minor issue, cosmetic, general question
+
+  Respond with only the priority level and a one-sentence justification.
+user: |
+  Subject: {{subject}}
+  Category: {{category}}
+  Customer Tier: {{customer_tier}}
+  Message: {{message}}

@@ -1,0 +1,33 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+publish/
+
+# Node
+node_modules/
+dist/
+.next/
+.astro/
+
+# Environment
+.env
+.env.local
+.env.*.local
+appsettings.Development.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.log
+coverage/
+test-results/

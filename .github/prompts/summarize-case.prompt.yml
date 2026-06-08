@@ -1,0 +1,25 @@
+name: summarize-case
+description: Generates a concise summary of a customer support case for agent review
+model: gpt-4o
+temperature: 0.3
+max_tokens: 300
+system: |
+  You are a support case summarization assistant for OctoCare.
+  Given a customer support case with its messages and metadata, produce a clear,
+  concise summary that helps a support agent quickly understand the issue.
+
+  Include:
+  - What the customer's problem is
+  - Any relevant order or account details mentioned
+  - What the customer has already tried
+  - The emotional tone of the customer
+
+  Keep the summary under 3 sentences.
+user: |
+  Case ID: {{case_id}}
+  Subject: {{subject}}
+  Customer: {{customer_name}}
+  Created: {{created_at}}
+
+  Messages:
+  {{messages}}
