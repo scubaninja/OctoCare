@@ -59,8 +59,51 @@ support-hub/
 
 ## Getting Started
 
+### Prerequisites
+
+- Docker + Docker Compose
+- Node.js 20+ and npm (for local web development)
+- .NET 8 SDK (for local API/worker development)
+
+### Run with Docker (recommended)
+
 ```bash
-docker-compose up
+docker compose up --build
+```
+
+Once running:
+
+- Web app: http://localhost:3000
+- API: http://localhost:8080
+- PostgreSQL: localhost:5432 (`octocare` / `octocare_dev`)
+
+### Local development (without Docker)
+
+```bash
+# Web app
+cd apps/web
+npm ci
+npm run dev
+```
+
+```bash
+# API
+dotnet run --project apps/api/OctoCare.Api.csproj
+```
+
+```bash
+# Workers
+dotnet run --project services/ai-triage-worker/AiTriageWorker.csproj
+dotnet run --project services/sla-worker/SlaWorker.csproj
+```
+
+### Common validation commands
+
+```bash
+cd apps/web && npm run lint && npm run build
+dotnet build apps/api/OctoCare.Api.csproj
+dotnet build services/ai-triage-worker/AiTriageWorker.csproj
+dotnet build services/sla-worker/SlaWorker.csproj
 ```
 
 ## License
