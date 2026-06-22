@@ -8,12 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial project structure with customer support portal and agent dashboard
-- AI-powered case triage and summarization
-- SLA monitoring and breach detection
-- Knowledge base search functionality
-- Customer case submission and tracking
-- Agent dashboard for case management
 
 ### Changed
 
