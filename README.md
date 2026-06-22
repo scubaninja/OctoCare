@@ -63,6 +63,10 @@ support-hub/
 docker-compose up
 ```
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a history of notable changes.
+
 ## License
 
 MIT
