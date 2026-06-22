@@ -25,6 +25,7 @@ support-hub/
 │   ├── docker/
 │   └── terraform/
 ├── docs/
+├── CHANGELOG.md
 └── docker-compose.yml
 ```
 
@@ -62,6 +63,10 @@ support-hub/
 ```bash
 docker-compose up
 ```
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for a history of notable changes to this project.
 
 ## License
 
