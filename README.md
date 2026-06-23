@@ -8,25 +8,60 @@ OctoCare demonstrates how modern enterprises can reduce support load, improve cu
 
 ## Architecture
 
+OctoCare is composed of five runtime components that share a single PostgreSQL database. The web frontend calls the REST API directly; the two background workers run independently on a polling loop.
+
 ```
 support-hub/
 ├── .github/          # Workflows, prompts, issue templates, skills
 ├── apps/
-│   ├── web/          # Customer portal + support dashboard
-│   └── api/          # Case management API (ASP.NET Core)
+│   ├── web/          # Customer portal + support dashboard  (Next.js / TypeScript)
+│   └── api/          # Case management REST API             (ASP.NET Core / C#)
 ├── services/
-│   ├── ai-triage-worker/   # Background case summarization/categorization
-│   └── sla-worker/         # Flags cases at risk of breaching SLA
+│   ├── ai-triage-worker/   # Background AI summarization & categorisation (C#)
+│   └── sla-worker/         # Background SLA breach detection              (C#)
 ├── db/
-│   ├── migrations/
-│   └── seed/
+│   ├── migrations/   # SQL schema migrations
+│   └── seed/         # Development seed data
 ├── infra/
-│   ├── bicep/
-│   ├── docker/
-│   └── terraform/
+│   ├── docker/       # Shared Docker configuration
+│   └── terraform/    # Cloud infrastructure (IaC)
 ├── docs/
 └── docker-compose.yml
 ```
+
+### Components
+
+| Component | Technology | Responsibility |
+|---|---|---|
+| **apps/web** | Next.js 14, TypeScript, Tailwind CSS | Customer-facing portal (submit cases, track status, knowledge base search, AI assistant) and internal agent dashboard (triage, SLA view, AI summaries). Talks to `apps/api` over HTTP. |
+| **apps/api** | ASP.NET Core (.NET 8), Entity Framework Core | REST API for case management. Exposes endpoints for cases, customers, knowledge base articles, and the AI assistant. Reads and writes to PostgreSQL via EF Core. Calls Azure OpenAI for on-demand AI features. |
+| **services/ai-triage-worker** | .NET 8 Worker Service | Background service that polls for new or unprocessed cases, calls Azure OpenAI to generate a summary, detect sentiment, classify priority, and suggest a next action, then writes the results back to the database. |
+| **services/sla-worker** | .NET 8 Worker Service | Background service that periodically scans open cases and flags those approaching or exceeding their SLA deadline, updating case status so the dashboard can surface at-risk items. |
+| **db** | PostgreSQL 16 | Single shared database. Schema is managed with SQL migration files. All four services connect using the `ConnectionStrings__DefaultConnection` environment variable. |
+
+### Data Flow
+
+```
+Browser
+  │
+  ▼
+apps/web  (Next.js, port 3000)
+  │  REST over HTTP
+  ▼
+apps/api  (ASP.NET Core, port 8080)
+  │                        │
+  │  SQL (EF Core)         │  Azure OpenAI API
+  ▼                        ▼
+PostgreSQL ◄──── ai-triage-worker  (polls DB, calls OpenAI)
+           ◄──── sla-worker        (polls DB, updates SLA flags)
+```
+
+### External Dependencies
+
+| Dependency | Used by | Purpose |
+|---|---|---|
+| PostgreSQL 16 | All services | Primary data store |
+| Azure OpenAI | `apps/api`, `ai-triage-worker` | Case summarization, sentiment analysis, priority classification, AI assistant responses |
 
 ## Customer Features
 
