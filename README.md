@@ -1,68 +1,142 @@
-# OctoCare Support Hub
+# 🐙 OctoCare Support Hub
 
-A customer-facing support portal with an internal agent dashboard built for **Titan Limited**.
+Welcome to **OctoCare**, a colorful demo support platform for **Titan Limited**. It combines a customer-facing portal, an internal agent dashboard, a case management API, and background workers for AI triage and SLA monitoring.
 
-## Overview
+## 🌈 What this repo does
 
-OctoCare demonstrates how modern enterprises can reduce support load, improve customer experience, and bring AI into the software delivery process safely — using GitHub from idea to production.
+OctoCare shows how a modern support experience can work from end to end:
 
-## Architecture
+- **Customers** can search a knowledge base, ask an AI assistant for help, and open support cases.
+- **Agents** can triage cases, review AI-generated summaries, manage priorities, and watch SLA risk.
+- **Developers** can use the repo to demonstrate how GitHub, Copilot, Actions, and security tooling fit into an AI-enabled product workflow.
 
-```
-support-hub/
-├── .github/          # Workflows, prompts, issue templates, skills
+In short: **this repo is both an application and a demo story about building support software safely with AI.**
+
+## 🧭 Repo map
+
+```text
+OctoCare/
 ├── apps/
-│   ├── web/          # Customer portal + support dashboard
-│   └── api/          # Case management API (ASP.NET Core)
+│   ├── web/                  # Next.js customer portal + support dashboard
+│   └── api/                  # ASP.NET Core case management API
 ├── services/
-│   ├── ai-triage-worker/   # Background case summarization/categorization
-│   └── sla-worker/         # Flags cases at risk of breaching SLA
-├── db/
-│   ├── migrations/
-│   └── seed/
-├── infra/
-│   ├── bicep/
-│   ├── docker/
-│   └── terraform/
-├── docs/
-└── docker-compose.yml
+│   ├── ai-triage-worker/     # AI summaries, categorization, suggested actions
+│   └── sla-worker/           # SLA monitoring and breach detection
+├── db/                       # Database migrations and seed data
+├── docs/                     # Architecture, governance, demo, security docs
+├── infra/                    # Deployment and infrastructure assets
+├── .github/
+│   ├── prompts/              # Versioned AI prompts
+│   └── workflows/            # CI, security, deployment automation
+└── docker-compose.yml        # Local multi-service startup
 ```
 
-## Customer Features
+## ✨ Core capabilities
 
-- Submit a support request
-- Track case status
-- Add comments or attachments
-- Search a knowledge base
-- Use an AI assistant to find answers before opening a ticket
+### 🧑‍💼 Customer experience
 
-## Agent Dashboard Features
+- Submit and track support cases
+- Search self-service knowledge base content
+- Ask an AI assistant for answers before opening a ticket
 
-- Triage incoming cases
-- Assign priority and categorize issues
-- View AI-generated summaries
-- Get suggested next steps
-- Escalate issues
-- Track SLA status
+### 🛠️ Agent experience
 
-## Demo Storyline
+- Review incoming cases in a support dashboard
+- See AI-generated summaries and classifications
+- Manage priority, category, escalation, and next steps
+- Monitor SLA health for active cases
 
-1. A customer reports a damaged product through the website
-2. The support dashboard shows the new case
-3. AI summarizes the issue, classifies priority, and suggests the next action
-4. A GitHub Issue is created for a missing feature: photo upload for damaged claims
-5. Copilot helps implement the feature
-6. Copilot Code Review catches missing validation or accessibility problems
-7. CodeQL and dependency review run in the PR
-8. GitHub Actions deploys the app
-9. The live site now supports image upload and better case triage
+### 🤖 AI and platform story
 
-## Getting Started
+- AI prompts are versioned in source control
+- Background workers process triage and SLA workflows
+- GitHub Actions, CodeQL, and dependency review support safer delivery
+
+## 🧰 What you need
+
+### Required tools
+
+- **Git**
+- **Docker** with Compose support
+- **Node.js 20+** and **npm** for web app development
+- **.NET 8 SDK** for the API and worker services
+
+### Access you may need
+
+- **Azure OpenAI access** if you want AI-powered flows to work locally
+  - `AZURE_OPENAI_ENDPOINT`
+  - `AZURE_OPENAI_API_KEY`
+- **Azure access** if you plan to work with deployment or infrastructure assets
+- **GitHub repository access** if you need to run CI/CD workflows or contribute through pull requests
+
+> ⚠️ AI-related features depend on Azure OpenAI configuration. Without those values, core app structure can still be explored, but AI paths may not function fully.
+
+## 🚀 Getting started
+
+### Option 1: Quick start with Docker
+
+From the repository root:
 
 ```bash
-docker-compose up
+docker compose up --build
 ```
 
-## License
+This starts:
+
+- **Web app** on `http://localhost:3000`
+- **API** on `http://localhost:8080`
+- **PostgreSQL** on `localhost:5432`
+- **AI triage worker**
+- **SLA worker**
+
+If your Docker setup still uses the legacy command, `docker-compose up --build` should also work.
+
+### Option 2: Work on services individually
+
+Useful when you want faster feedback while changing a specific area:
+
+```bash
+# Web app
+cd apps/web
+npm install
+npm run lint
+npm run build
+```
+
+```bash
+# API
+dotnet build apps/api/OctoCare.Api.csproj
+
+# Workers
+dotnet build services/ai-triage-worker/AiTriageWorker.csproj
+dotnet build services/sla-worker/SlaWorker.csproj
+```
+
+## 🔐 Configuration notes
+
+- Local Docker setup uses PostgreSQL credentials defined in `docker-compose.yml`
+- Production secrets should stay out of source control
+- AI prompt assets live in `.github/prompts/` and should be treated like production code
+
+## 📚 Important docs for onboarding
+
+Start here if you want the bigger picture:
+
+- [`docs/architecture.md`](docs/architecture.md) — system layout, components, and data flow
+- [`docs/ai-governance.md`](docs/ai-governance.md) — how prompts are versioned, reviewed, and governed
+- [`docs/security-model.md`](docs/security-model.md) — auth, authorization, secrets, and supply chain controls
+- [`docs/demo-script.md`](docs/demo-script.md) — walkthrough for presenting the product and GitHub workflow story
+
+## 🎬 Suggested first tour
+
+If you're new to the repo, this is a good path:
+
+1. Read the [architecture doc](docs/architecture.md)
+2. Start the stack with Docker
+3. Open the web app and API locally
+4. Review `.github/prompts/` to see how AI assets are managed
+5. Use the [demo script](docs/demo-script.md) if you're presenting the project
+
+## 📄 License
 
 MIT
