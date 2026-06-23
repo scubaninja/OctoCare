@@ -4,6 +4,14 @@ public enum CaseStatus { New, Open, InProgress, WaitingOnCustomer, Escalated, Re
 public enum CasePriority { Low, Medium, High, Critical }
 public enum CaseCategory { Billing, Technical, Shipping, Account, ProductFeedback, General }
 
+/// <summary>
+/// Represents how close a case is to breaching its SLA deadline.
+/// Low = more than 50 % of the SLA window remaining.
+/// Medium = 25 – 50 % of the SLA window remaining.
+/// High = less than 25 % of the SLA window remaining, or already breached.
+/// </summary>
+public enum SlaRisk { Low, Medium, High }
+
 public class Case
 {
     public Guid Id { get; set; } = Guid.NewGuid();

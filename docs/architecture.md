@@ -19,6 +19,7 @@ OctoCare is a monorepo containing a customer support portal, API, and background
 - Handles case CRUD, authentication, knowledge base, and AI orchestration
 - PostgreSQL database via Entity Framework Core
 - Exposes RESTful endpoints for both customer and agent interfaces
+- Case list endpoint (`GET /api/cases`) supports filtering by `status`, `priority`, `assignedAgent`, and `slaRisk` (`low` | `medium` | `high`)
 
 ### Services
 

@@ -11,9 +11,35 @@ namespace OctoCare.Api.Controllers;
 [Route("api/[controller]")]
 public class CasesController(AppDbContext dbContext, IAiService aiService) : ControllerBase
 {
+    /// <summary>
+    /// Returns a list of cases, optionally filtered by status, priority, assigned agent, and SLA risk.
+    /// </summary>
+    /// <param name="status">Optional. Filter by case status (e.g. New, Open, InProgress).</param>
+    /// <param name="priority">Optional. Filter by case priority (Low, Medium, High, Critical).</param>
+    /// <param name="assignedAgent">Optional. Filter by the ID of the assigned agent.</param>
+    /// <param name="slaRisk">
+    /// Optional. Filter by SLA risk level: <c>low</c>, <c>medium</c>, or <c>high</c>.
+    /// Risk is computed from the fraction of the SLA window that has elapsed:
+    /// Low = more than 50 % remaining; Medium = 25–50 % remaining; High = less than 25 % remaining or already breached.
+    /// </param>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Case>>> GetCases([FromQuery] string? status, [FromQuery] string? priority, [FromQuery] string? assignedAgent)
+    public async Task<ActionResult<IEnumerable<Case>>> GetCases(
+        [FromQuery] string? status,
+        [FromQuery] string? priority,
+        [FromQuery] string? assignedAgent,
+        [FromQuery] string? slaRisk)
     {
+        SlaRisk? parsedSlaRisk = null;
+        if (!string.IsNullOrWhiteSpace(slaRisk))
+        {
+            if (!Enum.TryParse<SlaRisk>(slaRisk, true, out var slaRiskValue))
+            {
+                return BadRequest($"Invalid slaRisk '{slaRisk}'. Supported values are: low, medium, high.");
+            }
+
+            parsedSlaRisk = slaRiskValue;
+        }
+
         var query = dbContext.Cases
             .AsNoTracking()
             .Include(c => c.Customer)
@@ -48,7 +74,43 @@ public class CasesController(AppDbContext dbContext, IAiService aiService) : Con
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync();
 
+        if (parsedSlaRisk.HasValue)
+        {
+            var now = DateTime.UtcNow;
+            cases = cases.Where(c => ComputeSlaRisk(c, now) == parsedSlaRisk.Value).ToList();
+        }
+
         return Ok(cases);
+    }
+
+    /// <summary>
+    /// Computes SLA risk for a case based on the fraction of its SLA window that has elapsed:
+    /// Low    = more than 50 % of the window remaining
+    /// Medium = 25 – 50 % of the window remaining
+    /// High   = less than 25 % remaining or already breached
+    /// </summary>
+    internal static SlaRisk ComputeSlaRisk(Case supportCase, DateTime now)
+    {
+        if (supportCase.SlaBreached || now >= supportCase.SlaDeadline)
+        {
+            return SlaRisk.High;
+        }
+
+        var totalWindow = (supportCase.SlaDeadline - supportCase.CreatedAt).TotalSeconds;
+        if (totalWindow <= 0)
+        {
+            return SlaRisk.High;
+        }
+
+        var remaining = (supportCase.SlaDeadline - now).TotalSeconds;
+        var fractionRemaining = remaining / totalWindow;
+
+        return fractionRemaining switch
+        {
+            > 0.5 => SlaRisk.Low,
+            > 0.25 => SlaRisk.Medium,
+            _ => SlaRisk.High
+        };
     }
 
     [HttpGet("{id:guid}")]
