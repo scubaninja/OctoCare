@@ -65,9 +65,83 @@ support-hub/
 
 ## Getting Started
 
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- [Node.js 20+](https://nodejs.org/) — for running the web app outside Docker
+- [.NET 8 SDK](https://dotnet.microsoft.com/download) — for running the API or workers outside Docker
+
+### 1. Configure environment variables
+
+The API and AI workers require Azure OpenAI credentials. Copy the example below into a `.env` file at the project root:
+
 ```bash
-docker-compose up
+AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com/
+AZURE_OPENAI_API_KEY=<your-api-key>
 ```
+
+Docker Compose reads this file automatically. The database credentials are pre-configured for local use and do not need to change.
+
+### 2. Start all services with Docker Compose
+
+```bash
+docker-compose up --build
+```
+
+This starts:
+
+| Service           | URL                      |
+|-------------------|--------------------------|
+| Web (Next.js)     | http://localhost:3000    |
+| API (ASP.NET Core)| http://localhost:8080    |
+| PostgreSQL        | localhost:5432           |
+
+The AI triage worker and SLA worker run as background services with no HTTP port exposed.
+
+### 3. Run services individually (without Docker)
+
+**Web**
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+The web app expects the API at `http://localhost:8080`. Override this by setting `API_URL` in your shell before running.
+
+**API**
+
+```bash
+cd apps/api
+dotnet run
+```
+
+The API reads connection string and Azure OpenAI settings from `appsettings.json` or environment variables. Update `appsettings.json` for local overrides.
+
+**AI triage worker**
+
+```bash
+cd services/ai-triage-worker
+dotnet run
+```
+
+**SLA worker**
+
+```bash
+cd services/sla-worker
+dotnet run
+```
+
+### 4. Apply database migrations
+
+The PostgreSQL schema is managed via plain SQL migrations in `db/migrations/`. When running with Docker Compose the database starts empty; apply migrations manually:
+
+```bash
+psql -h localhost -U octocare -d octocare -f db/migrations/001_initial.sql
+```
+
+Password: `octocare_dev`
 
 ## License
 
