@@ -1,5 +1,10 @@
 # OctoCare Support Hub
 
+[![CI](https://github.com/scubaninja/OctoCare/actions/workflows/ci.yml/badge.svg)](https://github.com/scubaninja/OctoCare/actions/workflows/ci.yml)
+[![Deploy Dev](https://github.com/scubaninja/OctoCare/actions/workflows/deploy-dev.yml/badge.svg)](https://github.com/scubaninja/OctoCare/actions/workflows/deploy-dev.yml)
+[![Deploy Test](https://github.com/scubaninja/OctoCare/actions/workflows/deploy-test.yml/badge.svg)](https://github.com/scubaninja/OctoCare/actions/workflows/deploy-test.yml)
+[![Deploy Production](https://github.com/scubaninja/OctoCare/actions/workflows/deploy.yml/badge.svg)](https://github.com/scubaninja/OctoCare/actions/workflows/deploy.yml)
+
 A customer-facing support portal with an internal agent dashboard built for **Titan Limited**.
 
 ## Overview
