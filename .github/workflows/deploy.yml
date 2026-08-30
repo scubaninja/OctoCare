@@ -34,6 +34,7 @@ jobs:
     name: Terraform Plan
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
         with:
@@ -105,6 +106,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     needs: terraform-apply
     runs-on: ubuntu-latest
+    environment: production
     env:
       REGISTRY: ghcr.io/${{ github.repository_owner }}
     steps:
@@ -272,6 +274,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     needs: deploy-images
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Log in to Azure
         uses: azure/login@v2
