@@ -63,6 +63,21 @@ support-hub/
 docker-compose up
 ```
 
+## Deployment
+
+The `Deploy` workflow reads its Azure credentials and application secrets from
+the `production` GitHub environment. Configure these environment secrets before
+running the workflow:
+
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+- `DATABASE_ADMIN_PASSWORD`
+- `OPENAI_API_KEY`
+
+The Azure identity must have a federated credential for this repository and
+permission to provision the resources defined in `infra/terraform`.
+
 ## License
 
 MIT
