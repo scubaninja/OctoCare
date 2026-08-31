@@ -1,10 +1,15 @@
-name: CI
+name: CI/CD Workflow
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -58,3 +63,21 @@ jobs:
           context: ./services/sla-worker
           file: ./services/sla-worker/Dockerfile
           push: false
+
+  deploy-dev:
+    name: Deploy - Dev
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [build-api, build-web, build-workers]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Simulate deployment to development
+        run: echo "Pretending to deploy OctoCare to development."
+
+  deploy-prod:
+    name: Deploy - Prod
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: Deploy - Prod
+    steps:
+      - name: Simulate deployment to production
+        run: echo "Pretending to deploy OctoCare to production."
