@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   id-token: write
   attestations: write
@@ -308,3 +309,52 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --name octocare-production-sla \
             --image ${{ env.ACR_LOGIN_SERVER }}/sla-worker:${{ env.IMAGE_TAG }}
+
+  summary:
+    name: Deployment Summary
+    if: always()
+    needs: [terraform-plan, terraform-apply, deploy-images, deploy-apps]
+    runs-on: ubuntu-latest
+    env:
+      PLAN_STATUS: ${{ needs.terraform-plan.result }}
+      APPLY_STATUS: ${{ needs.terraform-apply.result }}
+      IMAGES_STATUS: ${{ needs.deploy-images.result }}
+      APPS_STATUS: ${{ needs.deploy-apps.result }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Generate deployment summary
+        run: |
+          started_at=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" --jq '.run_started_at')
+          elapsed=$(( $(date +%s) - $(date -d "$started_at" +%s) ))
+          printf -v duration '%02dh %02dm %02ds' $((elapsed / 3600)) $(((elapsed % 3600) / 60)) $((elapsed % 60))
+
+          status="success"
+          icon="✅"
+          for result in "$PLAN_STATUS" "$APPLY_STATUS" "$IMAGES_STATUS" "$APPS_STATUS"; do
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              status="$result"
+              icon="❌"
+              break
+            fi
+            if [[ "$result" == "skipped" ]]; then
+              status="skipped"
+              icon="⏭️"
+            fi
+          done
+
+          {
+            echo "## 🚀 Deployment Summary"
+            echo
+            echo "$icon **Status:** $status"
+            echo "📦 **Output:** Production infrastructure, container images, App Services, and Container Apps"
+            echo "🏷️ **Image tag:** \`${IMAGE_TAG}\`"
+            echo "⏱️ **Duration:** $duration"
+            echo
+            echo "### Deployment results"
+            echo "| Stage | Result |"
+            echo "| --- | --- |"
+            echo "| Terraform plan | $PLAN_STATUS |"
+            echo "| Terraform apply | $APPLY_STATUS |"
+            echo "| Build and push images | $IMAGES_STATUS |"
+            echo "| Deploy applications | $APPS_STATUS |"
+          } >> "$GITHUB_STEP_SUMMARY"

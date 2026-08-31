@@ -5,6 +5,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -16,3 +17,37 @@ jobs:
       - uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: moderate
+
+  summary:
+    name: Dependency Review Summary
+    if: always()
+    needs: dependency-review
+    runs-on: ubuntu-latest
+    env:
+      REVIEW_STATUS: ${{ needs.dependency-review.result }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Generate dependency review summary
+        run: |
+          started_at=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" --jq '.run_started_at')
+          elapsed=$(( $(date +%s) - $(date -d "$started_at" +%s) ))
+          printf -v duration '%02dh %02dm %02ds' $((elapsed / 3600)) $(((elapsed % 3600) / 60)) $((elapsed % 60))
+
+          if [[ "$REVIEW_STATUS" == "success" ]]; then
+            icon="✅"
+          else
+            icon="❌"
+          fi
+
+          {
+            echo "## 📦 Dependency Review Summary"
+            echo
+            echo "$icon **Status:** $REVIEW_STATUS"
+            echo "🔍 **Output:** Dependency changes checked for vulnerabilities at moderate severity or higher"
+            echo "⏱️ **Duration:** $duration"
+            echo
+            echo "### Review results"
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| Dependency review | $REVIEW_STATUS |"
+          } >> "$GITHUB_STEP_SUMMARY"

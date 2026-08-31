@@ -32,3 +32,37 @@ jobs:
       - uses: github/codeql-action/analyze@v3
         with:
           category: '/language:${{ matrix.language }}'
+
+  summary:
+    name: CodeQL Summary
+    if: always()
+    needs: analyze
+    runs-on: ubuntu-latest
+    env:
+      ANALYSIS_STATUS: ${{ needs.analyze.result }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Generate CodeQL summary
+        run: |
+          started_at=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" --jq '.run_started_at')
+          elapsed=$(( $(date +%s) - $(date -d "$started_at" +%s) ))
+          printf -v duration '%02dh %02dm %02ds' $((elapsed / 3600)) $(((elapsed % 3600) / 60)) $((elapsed % 60))
+
+          if [[ "$ANALYSIS_STATUS" == "success" ]]; then
+            icon="✅"
+          else
+            icon="❌"
+          fi
+
+          {
+            echo "## 🔐 CodeQL Analysis Summary"
+            echo
+            echo "$icon **Status:** $ANALYSIS_STATUS"
+            echo "🔍 **Output:** C# and JavaScript/TypeScript security analysis results uploaded to code scanning"
+            echo "⏱️ **Duration:** $duration"
+            echo
+            echo "### Analysis results"
+            echo "| Languages | Result |"
+            echo "| --- | --- |"
+            echo "| C#, JavaScript/TypeScript | $ANALYSIS_STATUS |"
+          } >> "$GITHUB_STEP_SUMMARY"

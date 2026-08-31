@@ -7,6 +7,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -58,3 +59,45 @@ jobs:
           context: ./services/sla-worker
           file: ./services/sla-worker/Dockerfile
           push: false
+
+  summary:
+    name: Build Summary
+    if: always()
+    needs: [build-api, build-web, build-workers]
+    runs-on: ubuntu-latest
+    env:
+      API_STATUS: ${{ needs.build-api.result }}
+      WEB_STATUS: ${{ needs.build-web.result }}
+      WORKERS_STATUS: ${{ needs.build-workers.result }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Generate build summary
+        run: |
+          started_at=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" --jq '.run_started_at')
+          elapsed=$(( $(date +%s) - $(date -d "$started_at" +%s) ))
+          printf -v duration '%02dh %02dm %02ds' $((elapsed / 3600)) $(((elapsed % 3600) / 60)) $((elapsed % 60))
+
+          status="success"
+          icon="✅"
+          for result in "$API_STATUS" "$WEB_STATUS" "$WORKERS_STATUS"; do
+            if [[ "$result" != "success" ]]; then
+              status="failure"
+              icon="❌"
+              break
+            fi
+          done
+
+          {
+            echo "## 🏗️ CI Build Summary"
+            echo
+            echo "$icon **Status:** $status"
+            echo "📦 **Output:** Docker build validation for the API, web app, AI triage worker, and SLA worker"
+            echo "⏱️ **Duration:** $duration"
+            echo
+            echo "### Build results"
+            echo "| Build | Result |"
+            echo "| --- | --- |"
+            echo "| API image | $API_STATUS |"
+            echo "| Web image | $WEB_STATUS |"
+            echo "| Worker images | $WORKERS_STATUS |"
+          } >> "$GITHUB_STEP_SUMMARY"
