@@ -1,0 +1,68 @@
+name: Security Report
+description: Report a non-sensitive security concern in OctoCare
+title: "[Security]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping keep OctoCare secure.
+
+        **Do not disclose exploitable vulnerabilities, secrets, personal data, or other sensitive details in a public issue.** Report those privately through [GitHub private vulnerability reporting](../../security/advisories/new).
+  - type: dropdown
+    id: concern
+    attributes:
+      label: Type of Concern
+      description: What kind of security concern are you reporting?
+      options:
+        - Authentication or authorization
+        - Data exposure or privacy
+        - Dependency or supply chain
+        - Infrastructure or deployment
+        - AI safety or prompt handling
+        - Security hardening
+        - Other non-sensitive concern
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      options:
+        - Customer Portal
+        - Agent Dashboard
+        - API
+        - AI Triage Worker
+        - SLA Worker
+        - Database
+        - Infrastructure
+        - CI/CD
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Concern Description
+      description: Describe the concern without including exploit instructions or sensitive information.
+      placeholder: Explain the observed behavior and where it occurs.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential Impact
+      description: Describe the potential impact at a high level.
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Suggested Remediation
+      description: Share any non-sensitive mitigation or hardening recommendations.
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: Public Disclosure Check
+      options:
+        - label: This report contains no exploit instructions, secrets, personal data, or other sensitive details.
+          required: true
