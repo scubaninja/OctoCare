@@ -1,3 +1,8 @@
+---
+name: triage-support-case
+description: Triage an OctoCare support case into priority, category, SLA risk, and next action. Use when asked to assess, classify, route, or prioritize an incoming case.
+---
+
 # Triage Support Case
 
 ## Description
@@ -14,6 +19,12 @@ When asked to triage a support case:
 4. Suggest a category (Billing, Technical, Shipping, Account, Product Feedback)
 5. Recommend an initial response or next action
 6. Flag if SLA is at risk based on the customer tier
+
+Do not invent missing customer, account, or timing data. Clearly label assumptions and request the specific missing fields needed for a reliable decision.
+
+## Output
+
+Return the summary, priority with rationale, category, SLA assessment, recommended next action, and any missing information.
 
 ## Context
 

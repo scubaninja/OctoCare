@@ -18,6 +18,8 @@ Follow these rules:
   - services/ai-triage-worker handles case summarization and categorization.
   - services/sla-worker handles SLA risk detection.
   - infra contains deployment assets.
+- Distinguish implemented behavior from target architecture and demo roadmap statements.
+- Verify commands, paths, and configuration names against the repository before documenting them.
 - Include setup, test, or validation steps when useful.
 - If adding a changelog, use a simple structure that can grow over time.
 - Avoid marketing language. Write like a helpful engineer.
