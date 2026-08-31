@@ -1,3 +1,8 @@
+---
+name: review-infrastructure-change
+description: Review OctoCare Terraform, deployment workflow, container, or environment changes for security and rollout risk. Use for infrastructure plans, deployment changes, and cloud configuration reviews.
+---
+
 # Review Infrastructure Change
 
 ## Description
@@ -16,6 +21,8 @@ When asked to review an infrastructure change:
 
 ## Context
 
-- OctoCare infrastructure lives under `infra/`
+- Deployed OctoCare infrastructure is defined under `infra/terraform/`
 - The solution includes a web app, API, AI triage worker, and SLA worker
 - Changes may also affect Docker configuration and deployment-time environment variables
+
+Report findings by severity with the affected file or resource, impact, and a concrete remediation. Distinguish verified issues from assumptions.

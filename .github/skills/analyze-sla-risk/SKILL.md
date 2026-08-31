@@ -1,3 +1,8 @@
+---
+name: analyze-sla-risk
+description: Calculate and explain OctoCare response or resolution SLA risk and recommend escalation. Use for approaching breaches, breached cases, workload rebalancing, and escalation decisions.
+---
+
 # Analyze SLA Risk
 
 ## Description
@@ -23,6 +28,8 @@ When asked to analyze SLA risk:
 | Low | 24 hours | 1 week |
 
 Premium customers receive halved response and resolution times.
+
+Use UTC timestamps and state the evaluation time. Do not calculate a deadline when priority, customer tier, SLA type, or the relevant start timestamp is missing.
 
 ## Escalation Path
 
