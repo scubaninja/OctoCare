@@ -20,6 +20,17 @@ const suggestedQuestions = [
   'How can I update my billing details?',
 ];
 
+function createMessage(role: ChatMessage['role'], content: string): ChatMessage {
+  const createdAt = new Date().toISOString();
+
+  return {
+    id: `${role}-${crypto.randomUUID()}`,
+    role,
+    content,
+    createdAt,
+  };
+}
+
 export default function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -39,12 +50,7 @@ export default function AssistantPage() {
     setError('');
     setLoading(true);
 
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: prompt.trim(),
-      createdAt: new Date().toISOString(),
-    };
+    const userMessage = createMessage('user', prompt.trim());
 
     setMessages((current) => [...current, userMessage]);
     setQuestion('');
@@ -62,12 +68,7 @@ export default function AssistantPage() {
 
       setMessages((current) => [
         ...current,
-        {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: answer,
-          createdAt: new Date().toISOString(),
-        },
+        createMessage('assistant', answer),
       ]);
     } catch (askError) {
       setError(askError instanceof Error ? askError.message : 'Unable to reach the AI assistant right now.');

@@ -43,17 +43,6 @@ export default function KnowledgeBasePage() {
 
   const selectedArticle = filteredArticles.find((article) => article.id === selectedArticleId) ?? filteredArticles[0] ?? null;
 
-  useEffect(() => {
-    if (!filteredArticles.length) {
-      setSelectedArticleId('');
-      return;
-    }
-
-    if (!filteredArticles.some((article) => article.id === selectedArticleId)) {
-      setSelectedArticleId(filteredArticles[0].id);
-    }
-  }, [filteredArticles, selectedArticleId]);
-
   return (
     <div className="space-y-8">
       <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
