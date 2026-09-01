@@ -1,60 +1,138 @@
-name: CI
+name: CI/CD Workflow
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  build-api:
-    name: Build API
+  lint:
+    name: Stage 1 - Lint
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Lint web application
+        working-directory: apps/web
+        run: npm run lint
+
+  test:
+    name: Stage 2 - Test
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project:
+          - apps/api/OctoCare.Api.csproj
+          - services/ai-triage-worker/AiTriageWorker.csproj
+          - services/sla-worker/SlaWorker.csproj
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run .NET test target
+        run: dotnet test ${{ matrix.project }} --configuration Release
+
+  build:
+    name: Stage 3 - Build
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Build API
+        run: dotnet build apps/api/OctoCare.Api.csproj --configuration Release
+
+      - name: Build AI triage worker
+        run: dotnet build services/ai-triage-worker/AiTriageWorker.csproj --configuration Release
+
+      - name: Build SLA worker
+        run: dotnet build services/sla-worker/SlaWorker.csproj --configuration Release
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Build web application
+        working-directory: apps/web
+        run: npm run build
+
+  containerize:
+    name: Stage 4 - Containerize (${{ matrix.component.name }})
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component:
+          - name: API
+            context: ./apps/api
+            dockerfile: ./apps/api/Dockerfile
+          - name: Web
+            context: ./apps/web
+            dockerfile: ./apps/web/Dockerfile
+          - name: AI triage worker
+            context: ./services/ai-triage-worker
+            dockerfile: ./services/ai-triage-worker/Dockerfile
+          - name: SLA worker
+            context: ./services/sla-worker
+            dockerfile: ./services/sla-worker/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build API image
+      - name: Build ${{ matrix.component.name }} image
         uses: docker/build-push-action@v5
         with:
-          context: ./apps/api
-          file: ./apps/api/Dockerfile
+          context: ${{ matrix.component.context }}
+          file: ${{ matrix.component.dockerfile }}
           push: false
 
-  build-web:
-    name: Build Web
+  deploy-dev:
+    name: Deploy - Dev
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: containerize
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - name: Simulate deployment to development
+        run: echo "Pretending to deploy OctoCare to development."
 
-      - name: Build web image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./apps/web
-          file: ./apps/web/Dockerfile
-          push: false
-
-  build-workers:
-    name: Build Workers
+  deploy-prod:
+    name: Deploy - Prod
+    needs: deploy-dev
     runs-on: ubuntu-latest
+    environment: Deploy - Prod
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Build AI triage worker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./services/ai-triage-worker
-          file: ./services/ai-triage-worker/Dockerfile
-          push: false
-
-      - name: Build SLA worker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./services/sla-worker
-          file: ./services/sla-worker/Dockerfile
-          push: false
+      - name: Simulate deployment to production
+        run: echo "Pretending to deploy OctoCare to production."
