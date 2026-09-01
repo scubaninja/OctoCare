@@ -16,3 +16,4 @@ jobs:
       - uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: moderate
+          warn-on-openssf-scorecard-level: 2
