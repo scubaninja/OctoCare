@@ -34,6 +34,7 @@ support-hub/
 - Track case status
 - Add comments or attachments
 - Search a knowledge base
+- Export the currently filtered knowledge base search results as CSV
 - Use an AI assistant to find answers before opening a ticket
 
 ## Agent Dashboard Features
@@ -62,6 +63,46 @@ support-hub/
 ```bash
 docker-compose up
 ```
+
+### Web app development
+
+```bash
+cd apps/web
+npm install
+npm run lint
+npm run build
+npm test
+```
+
+### Knowledge base CSV export
+
+The customer-facing **Knowledge base** page (`apps/web/src/app/knowledge-base/page.tsx`)
+lets customers search articles by keyword, topic, or category, then export
+the results as a CSV file:
+
+- The **Export CSV** button exports exactly the articles currently displayed
+  on screen — if a search query is active, only the filtered/matching
+  articles are included in the export, never the full unfiltered catalog.
+- The button is disabled while articles are loading, if loading failed, or
+  when the active search matches no articles, so customers can't trigger an
+  export that would be empty or based on stale data. Its accessible name
+  ("Export CSV") and description are exposed to assistive technology via
+  `aria-describedby`, and a polite live region announces how many articles
+  were exported once the download starts.
+- The exported filename is derived deterministically from the active search
+  query (e.g. `knowledge-base-articles-vpn.csv`, or
+  `knowledge-base-articles.csv` with no search applied) — the same query
+  always produces the same filename.
+- CSV serialization (`apps/web/src/lib/csv.ts`) follows RFC 4180 quoting
+  rules, escapes embedded commas/quotes/line breaks, neutralizes values that
+  would otherwise be interpreted as spreadsheet formulas (CSV/formula
+  injection), and prepends a UTF-8 byte-order mark so the file opens with the
+  correct character encoding in Excel. The generated object URL is revoked
+  immediately after the download is triggered.
+- Domain-specific column/filename logic lives in
+  `apps/web/src/lib/knowledge-base-export.ts`, and is covered by unit tests
+  alongside the generic serialization helpers and a component test that
+  proves searching filters both the on-screen results and the exported rows.
 
 ## Deployment
 
