@@ -32,3 +32,47 @@ jobs:
       - uses: github/codeql-action/analyze@v4
         with:
           category: '/language:${{ matrix.language }}'
+
+  summary:
+    name: CodeQL Summary
+    if: always()
+    needs: analyze
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate analysis summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+        run: |
+          started_at=$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" |
+            jq --raw-output '.run_started_at')
+          duration_seconds=$(($(date +%s) - $(date --date="$started_at" +%s)))
+          printf -v duration '%dm %02ds' \
+            $((duration_seconds / 60)) $((duration_seconds % 60))
+
+          case "$ANALYZE_RESULT" in
+            success) status="Success" ;;
+            failure) status="Failure" ;;
+            cancelled) status="Cancelled" ;;
+            *) status="$ANALYZE_RESULT" ;;
+          esac
+
+          {
+            echo "## CodeQL Analysis Summary"
+            echo
+            echo "**Status:** $status"
+            echo
+            echo "**Output:** Code scanning results for C# and JavaScript/TypeScript."
+            echo
+            echo "**Duration:** $duration"
+            echo
+            echo "### Analysis"
+            echo
+            echo "| Languages | Result |"
+            echo "| --- | --- |"
+            echo "| C#, JavaScript/TypeScript | $ANALYZE_RESULT |"
+          } >> "$GITHUB_STEP_SUMMARY"

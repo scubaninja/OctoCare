@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -137,3 +138,61 @@ jobs:
     steps:
       - name: Simulate deployment to production
         run: echo "Pretending to deploy OctoCare to production."
+
+  summary:
+    name: Build Summary
+    if: always()
+    needs: [lint, test, build, containerize, deploy-dev, deploy-prod]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate build summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LINT_RESULT: ${{ needs.lint.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          CONTAINER_RESULT: ${{ needs.containerize.result }}
+          DEV_DEPLOY_RESULT: ${{ needs.deploy-dev.result }}
+          PROD_DEPLOY_RESULT: ${{ needs.deploy-prod.result }}
+        run: |
+          started_at=$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" |
+            jq --raw-output '.run_started_at')
+          duration_seconds=$(($(date +%s) - $(date --date="$started_at" +%s)))
+          printf -v duration '%dm %02ds' \
+            $((duration_seconds / 60)) $((duration_seconds % 60))
+
+          status="Success"
+          for result in "$LINT_RESULT" "$TEST_RESULT" "$BUILD_RESULT" \
+            "$CONTAINER_RESULT" "$DEV_DEPLOY_RESULT" "$PROD_DEPLOY_RESULT"; do
+            if [[ "$result" == "failure" ]]; then
+              status="Failure"
+              break
+            elif [[ "$result" == "cancelled" ]]; then
+              status="Cancelled"
+            fi
+          done
+
+          {
+            echo "## OctoCare CI/CD Build Summary"
+            echo
+            echo "**Status:** $status"
+            echo
+            echo "**Output:** API, web application, AI triage worker, and SLA worker builds; four container images; environment deployments when eligible."
+            echo
+            echo "**Duration:** $duration"
+            echo
+            echo "### Build stages"
+            echo
+            echo "| Stage | Result |"
+            echo "| --- | --- |"
+            echo "| Lint | $LINT_RESULT |"
+            echo "| Test | $TEST_RESULT |"
+            echo "| Build | $BUILD_RESULT |"
+            echo "| Containerize | $CONTAINER_RESULT |"
+            echo "| Deploy - Dev | $DEV_DEPLOY_RESULT |"
+            echo "| Deploy - Prod | $PROD_DEPLOY_RESULT |"
+          } >> "$GITHUB_STEP_SUMMARY"
