@@ -1,6 +1,6 @@
 namespace OctoCare.Api.Models;
 
-public enum CustomerTier { Standard, Premium, Enterprise }
+public enum CustomerTier { Standard, Starter, Business, Premium, Enterprise }
 
 public class Customer
 {

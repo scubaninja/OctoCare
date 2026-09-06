@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { PriorityBadge } from '@/components/PriorityBadge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { apiGet } from '@/lib/api';
-import { normalizeDashboardStats, normalizeSupportCases } from '@/lib/normalize';
+import { normalizeSupportCases } from '@/lib/normalize';
 import type { DashboardStats, SupportCase } from '@/lib/types';
 import { formatDateTime, titleCase } from '@/lib/utils';
 
@@ -36,9 +36,15 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const response = await apiGet('/api/dashboard/overview');
-        setStats(normalizeDashboardStats(response));
-        setCases(normalizeSupportCases(response));
+        const nextCases = normalizeSupportCases(await apiGet('/api/cases'));
+        const activeCases = nextCases.filter((supportCase) => !['Resolved', 'Closed'].includes(supportCase.status));
+        setStats({
+          totalCases: nextCases.length,
+          openCases: activeCases.length,
+          criticalCases: nextCases.filter((supportCase) => ['Critical', 'Urgent'].includes(supportCase.priority)).length,
+          slaAtRisk: activeCases.filter((supportCase) => supportCase.slaStatus !== 'Safe').length,
+        });
+        setCases(nextCases);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Unable to load the agent dashboard.');
       } finally {

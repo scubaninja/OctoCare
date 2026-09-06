@@ -24,9 +24,9 @@ function normalizeComment(value: unknown, index: number): CaseComment {
   return {
     id: getString(record?.id, `comment-${index}`),
     author: getString(record?.author, 'OctoCare Team'),
-    message: getString(record?.message, ''),
+    message: getString(record?.message, getString(record?.content)),
     createdAt: getString(record?.createdAt, new Date().toISOString()),
-    visibility: record?.visibility === 'internal' ? 'internal' : 'customer',
+    visibility: record?.visibility === 'internal' || record?.isInternal === true ? 'internal' : 'customer',
   };
 }
 
@@ -35,10 +35,10 @@ function normalizeAuditEntry(value: unknown, index: number): AuditEntry {
 
   return {
     id: getString(record?.id, `audit-${index}`),
-    actor: getString(record?.actor, 'System'),
+    actor: getString(record?.actor, getString(record?.performedBy, 'System')),
     action: getString(record?.action, 'Updated case'),
-    createdAt: getString(record?.createdAt, new Date().toISOString()),
-    details: getString(record?.details),
+    createdAt: getString(record?.createdAt, getString(record?.timestamp, new Date().toISOString())),
+    details: getString(record?.details, getString(record?.newValue)),
   };
 }
 
@@ -58,20 +58,27 @@ export function normalizeSupportCase(value: unknown): SupportCase | null {
     id: getString(record.id),
     subject: getString(record.subject, 'Untitled case'),
     description: getString(record.description),
-    customerName: getString(record.customerName),
-    customerEmail: getString(record.customerEmail),
+    customerName: getString(record.customerName, getString(asRecord(record.customer)?.name)),
+    customerEmail: getString(record.customerEmail, getString(asRecord(record.customer)?.email)),
     status: getString(record.status, 'Open'),
     priority: getString(record.priority, 'Medium'),
     category: getString(record.category, 'General'),
     createdAt: getString(record.createdAt, new Date().toISOString()),
     updatedAt: getString(record.updatedAt, getString(record.createdAt, new Date().toISOString())),
     slaDeadline: getString(record.slaDeadline),
-    slaStatus: getString(record.slaStatus),
+    slaStatus: getString(
+      record.slaStatus,
+      record.slaBreached === true
+        ? 'Breached'
+        : typeof record.slaDeadline === 'string' && new Date(record.slaDeadline).getTime() - Date.now() < 4 * 60 * 60 * 1000
+          ? 'At risk'
+          : 'Safe',
+    ),
     comments,
     aiSummary: getString(record.aiSummary),
-    suggestedNextAction: getString(record.suggestedNextAction),
+    suggestedNextAction: getString(record.suggestedNextAction, getString(record.aiSuggestedAction)),
     auditHistory,
-    assignee: getString(record.assignee),
+    assignee: getString(record.assignee, getString(record.assignedAgentId)),
   };
 }
 

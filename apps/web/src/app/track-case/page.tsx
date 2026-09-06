@@ -5,7 +5,7 @@ import { Loader2, MessageSquarePlus, Search } from 'lucide-react';
 
 import { PriorityBadge } from '@/components/PriorityBadge';
 import { StatusBadge } from '@/components/StatusBadge';
-import { apiPost } from '@/lib/api';
+import { apiGet, apiPost } from '@/lib/api';
 import { normalizeSupportCase } from '@/lib/normalize';
 import type { SupportCase } from '@/lib/types';
 import { formatDate, formatDateTime } from '@/lib/utils';
@@ -24,7 +24,7 @@ export default function TrackCasePage() {
     setLoading(true);
 
     try {
-      const response = await apiPost('/api/cases/track', { query });
+      const response = await apiGet(`/api/cases/${encodeURIComponent(query.trim())}`);
       const nextCase = normalizeSupportCase(response);
 
       if (!nextCase) {
@@ -48,25 +48,14 @@ export default function TrackCasePage() {
     setCommentLoading(true);
 
     try {
-      const response = await apiPost(`/api/cases/${caseData.id}/comments`, { message: comment.trim() });
-      const refreshedCase = normalizeSupportCase(response);
-
-      setCaseData(
-        refreshedCase ?? {
-          ...caseData,
-          comments: [
-            ...caseData.comments,
-            {
-              id: `comment-${Date.now()}`,
-              author: 'You',
-              message: comment.trim(),
-              createdAt: new Date().toISOString(),
-              visibility: 'customer',
-            },
-          ],
-          updatedAt: new Date().toISOString(),
-        },
-      );
+      await apiPost(`/api/cases/${caseData.id}/comments`, {
+        author: 'Demo Customer',
+        content: comment.trim(),
+        isInternal: false,
+      });
+      const refreshedCase = normalizeSupportCase(await apiGet(`/api/cases/${caseData.id}`));
+      if (!refreshedCase) throw new Error('The updated case was not returned by the API.');
+      setCaseData(refreshedCase);
       setComment('');
     } catch (commentError) {
       setError(commentError instanceof Error ? commentError.message : 'Unable to add your comment.');
@@ -82,7 +71,7 @@ export default function TrackCasePage() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-600">Case tracking</p>
           <h1 className="text-4xl font-semibold text-slate-950">Track your support case</h1>
           <p className="text-sm leading-6 text-slate-600">
-            Enter your case ID or email to check the latest status, review updates, and add follow-up details for our support team.
+            Enter your case ID to check the latest status, review updates, and add follow-up details for our support team.
           </p>
         </div>
 
@@ -92,7 +81,7 @@ export default function TrackCasePage() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Enter case ID or email address"
+              placeholder="Enter case ID"
               className="w-full rounded-full border border-slate-200 py-3 pl-11 pr-4 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
               required
             />

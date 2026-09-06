@@ -12,7 +12,7 @@ import type { SupportCase } from '@/lib/types';
 import { formatDateTime, getSlaCountdown } from '@/lib/utils';
 
 const priorityOptions = ['Critical', 'High', 'Medium', 'Low'];
-const statusOptions = ['New', 'Open', 'Pending', 'In Progress', 'Escalated', 'Resolved', 'Closed'];
+const statusOptions = ['New', 'Open', 'In Progress', 'Pending Customer', 'Escalated', 'Resolved', 'Closed'];
 
 export default function DashboardCaseDetailPage() {
   const params = useParams<{ id: string }>();
@@ -30,7 +30,7 @@ export default function DashboardCaseDetailPage() {
 
     async function loadCase() {
       try {
-        const response = await apiGet(`/api/cases/${caseId}/detail`);
+        const response = await apiGet(`/api/cases/${caseId}`);
         const nextCase = normalizeSupportCase(response);
 
         if (!nextCase) {
@@ -68,7 +68,7 @@ export default function DashboardCaseDetailPage() {
     if (!caseId) return;
     setError('');
     setBusyAction('assign');
-    void syncCase(apiPost(`/api/cases/${caseId}/assign`, {}), { assignee: 'You' });
+    void syncCase(apiPut(`/api/cases/${caseId}`, { assignedAgentId: '44444444-4444-4444-4444-444444444441' }), { assignee: 'You' });
   }
 
   function handleEscalate() {
@@ -82,21 +82,24 @@ export default function DashboardCaseDetailPage() {
     if (!caseId) return;
     setError('');
     setBusyAction('priority');
-    void syncCase(apiPut(`/api/cases/${caseId}/priority`, { priority }), { priority });
+    void syncCase(apiPut(`/api/cases/${caseId}`, { priority }), { priority });
   }
 
   function handleStatusUpdate() {
     if (!caseId) return;
     setError('');
     setBusyAction('status');
-    void syncCase(apiPut(`/api/cases/${caseId}/status`, { status }), { status });
+    void syncCase(apiPut(`/api/cases/${caseId}`, { status: status.replaceAll(' ', '') }), { status });
   }
 
   function handleRefreshSummary() {
     if (!caseId) return;
     setError('');
     setBusyAction('summary');
-    void syncCase(apiPost(`/api/cases/${caseId}/ai-summary`, {}), {});
+    void syncCase(
+      apiGet(`/api/cases/${caseId}/summary`).then(() => apiGet(`/api/cases/${caseId}`)),
+      {},
+    );
   }
 
   return (

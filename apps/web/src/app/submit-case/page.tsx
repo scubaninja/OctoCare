@@ -2,10 +2,12 @@
 
 import { FormEvent, useState } from 'react';
 import { CheckCircle2, Loader2, Send } from 'lucide-react';
+import Link from 'next/link';
 
 import { apiPost } from '@/lib/api';
 
 const categories = ['Billing', 'Technical', 'Shipping', 'Account', 'Product Feedback', 'General'] as const;
+const demoCustomerId = '11111111-1111-1111-1111-111111111111';
 
 type Category = (typeof categories)[number];
 
@@ -34,7 +36,11 @@ export default function SubmitCasePage() {
     setLoading(true);
 
     try {
-      const response = await apiPost('/api/cases', form);
+      const response = await apiPost('/api/cases', {
+        ...form,
+        category: form.category.replace(' ', ''),
+        customerId: demoCustomerId,
+      });
       const createdId =
         (typeof response?.caseId === 'string' && response.caseId) ||
         (typeof response?.id === 'string' && response.id) ||
@@ -135,6 +141,12 @@ export default function SubmitCasePage() {
               <div>
                 <p className="font-semibold">Case submitted successfully</p>
                 <p className="mt-1 text-sm">Your case ID is <span className="font-semibold">{caseId}</span>. Save it to track updates and add comments later.</p>
+                <Link
+                  href={`/dashboard/cases/${caseId}`}
+                  className="mt-3 inline-flex text-sm font-semibold underline underline-offset-4"
+                >
+                  Open this case
+                </Link>
               </div>
             </div>
           </div>
