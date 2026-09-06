@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL;
-
-if (process.env.NODE_ENV === 'production' && !apiUrl) {
-  throw new Error('NEXT_PUBLIC_API_URL or API_URL must be set for production builds.');
-}
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '';
 
 const nextConfig = {
   output: 'standalone',
