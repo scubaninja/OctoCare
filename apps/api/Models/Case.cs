@@ -1,8 +1,8 @@
 namespace OctoCare.Api.Models;
 
-public enum CaseStatus { New, Open, InProgress, WaitingOnCustomer, Escalated, Resolved, Closed }
-public enum CasePriority { Low, Medium, High, Critical }
-public enum CaseCategory { Billing, Technical, Shipping, Account, ProductFeedback, General }
+public enum CaseStatus { New, Open, InProgress, PendingCustomer, WaitingOnCustomer, Escalated, Resolved, Closed }
+public enum CasePriority { Low, Medium, High, Critical, Urgent }
+public enum CaseCategory { Billing, Technical, Shipping, ShippingDamage, Authentication, Returns, OrderTracking, Account, ProductFeedback, General }
 
 public class Case
 {
@@ -13,10 +13,10 @@ public class Case
     public CasePriority Priority { get; set; } = CasePriority.Medium;
     public CaseCategory Category { get; set; } = CaseCategory.General;
     public Guid CustomerId { get; set; }
-    public string? AssignedAgentId { get; set; }
+    public Guid? AssignedAgentId { get; set; }
     public string? AiSummary { get; set; }
     public string? AiSuggestedAction { get; set; }
-    public string? SentimentScore { get; set; }
+    public decimal? SentimentScore { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ResolvedAt { get; set; }

@@ -12,7 +12,7 @@ namespace OctoCare.Api.Controllers;
 public class CasesController(AppDbContext dbContext, IAiService aiService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Case>>> GetCases([FromQuery] string? status, [FromQuery] string? priority, [FromQuery] string? assignedAgent)
+    public async Task<ActionResult<IEnumerable<Case>>> GetCases([FromQuery] string? status, [FromQuery] string? priority, [FromQuery] Guid? assignedAgent)
     {
         var query = dbContext.Cases
             .AsNoTracking()
@@ -39,7 +39,7 @@ public class CasesController(AppDbContext dbContext, IAiService aiService) : Con
             query = query.Where(c => c.Priority == parsedPriority);
         }
 
-        if (!string.IsNullOrWhiteSpace(assignedAgent))
+        if (assignedAgent.HasValue)
         {
             query = query.Where(c => c.AssignedAgentId == assignedAgent);
         }
@@ -177,8 +177,8 @@ public class CasesController(AppDbContext dbContext, IAiService aiService) : Con
 
         if (request.AssignedAgentId != supportCase.AssignedAgentId)
         {
-            AddAuditEntry(supportCase, "AssignmentUpdated", supportCase.AssignedAgentId, request.AssignedAgentId);
-            supportCase.AssignedAgentId = string.IsNullOrWhiteSpace(request.AssignedAgentId) ? null : request.AssignedAgentId.Trim();
+            AddAuditEntry(supportCase, "AssignmentUpdated", supportCase.AssignedAgentId?.ToString(), request.AssignedAgentId?.ToString());
+            supportCase.AssignedAgentId = request.AssignedAgentId;
             updatesMade = true;
         }
 
@@ -321,7 +321,7 @@ public class CasesController(AppDbContext dbContext, IAiService aiService) : Con
 
     private static TimeSpan GetSlaWindow(CasePriority priority) => priority switch
     {
-        CasePriority.Critical => TimeSpan.FromHours(4),
+        CasePriority.Urgent or CasePriority.Critical => TimeSpan.FromHours(4),
         CasePriority.High => TimeSpan.FromHours(8),
         CasePriority.Medium => TimeSpan.FromHours(24),
         _ => TimeSpan.FromHours(72)

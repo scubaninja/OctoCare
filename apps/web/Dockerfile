@@ -1,5 +1,9 @@
 FROM node:24-alpine AS builder
 WORKDIR /app
+ARG API_URL
+ARG NEXT_PUBLIC_API_URL
+ENV API_URL=$API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .

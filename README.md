@@ -94,9 +94,10 @@ as one service and do not set a custom `start.sh` command.
    PostgreSQL query interface.
 5. Add a `web` service from the same repository. Set **Root Directory** to
    `/apps/web` and **Railway Config File** to `/apps/web/railway.json`.
-6. Set the web variable `API_URL` to the API's public URL, without a trailing
-   slash. This value is included in the browser bundle during the Next.js build,
-   so redeploy the web service after changing it.
+6. Set the web variable `NEXT_PUBLIC_API_URL` to the API's Railway public URL,
+   without a trailing slash. `API_URL` remains supported as a legacy alias.
+   The Docker build includes this value in the browser bundle, so redeploy the
+   web service after changing it.
 7. Generate the web service's public domain. Set the API variable
    `Cors__AllowedOrigins__0` to that URL without a trailing slash, then redeploy
    the API service.
