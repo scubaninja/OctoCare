@@ -78,6 +78,32 @@ running the workflow:
 The Azure identity must have a federated credential for this repository and
 permission to provision the resources defined in `infra/terraform`.
 
+### Railway
+
+Deploy the repository as two Railway services. Do not deploy the repository root
+as one service and do not set a custom `start.sh` command.
+
+1. Add a PostgreSQL service to the Railway project.
+2. Add an `api` service from this GitHub repository. Set **Root Directory** to
+   `/apps/api` and **Railway Config File** to `/apps/api/railway.json`.
+3. In the API service, add Railway variable references for `PGHOST`, `PGPORT`,
+   `PGDATABASE`, `PGUSER`, and `PGPASSWORD` from the PostgreSQL service. The API
+   converts these variables to its Npgsql connection string.
+4. Generate a public domain for the API. Initialize the database once by running
+   `db/migrations/001_initial.sql` and then `db/seed/seed.sql` in Railway's
+   PostgreSQL query interface.
+5. Add a `web` service from the same repository. Set **Root Directory** to
+   `/apps/web` and **Railway Config File** to `/apps/web/railway.json`.
+6. Set the web variable `API_URL` to the API's public URL, without a trailing
+   slash. This value is included in the browser bundle during the Next.js build,
+   so redeploy the web service after changing it.
+7. Generate the web service's public domain. Set the API variable
+   `Cors__AllowedOrigins__0` to that URL without a trailing slash, then redeploy
+   the API service.
+
+Both Railway service configs force Dockerfile builds and clear custom start
+commands, preventing Railpack from looking for `start.sh`.
+
 ## License
 
 MIT
