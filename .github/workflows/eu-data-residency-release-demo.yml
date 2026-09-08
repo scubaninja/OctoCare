@@ -6,9 +6,10 @@ on:
       metrics_scope:
         description: Copilot usage metrics scope
         required: true
-        default: organization
+        default: skip
         type: choice
         options:
+          - skip
           - organization
           - enterprise
       enterprise_slug:
@@ -39,7 +40,7 @@ jobs:
             echo "| --- | --- |"
             echo "| GitHub Enterprise Cloud with data residency | Requests use \`github.api_url\`, which resolves to the current tenant API host. |"
             echo "| Dependabot alerts in Actions | The job has only \`vulnerability-alerts: read\` access. |"
-            echo "| Copilot usage metrics | The latest 28-day organization or enterprise report is summarized and retained as an artifact. |"
+            echo "| Copilot usage metrics | When requested, the latest 28-day organization or enterprise report is summarized and retained as an artifact. |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Summarize open Dependabot alerts
@@ -90,7 +91,18 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Explain skipped Copilot usage metrics
+        if: inputs.metrics_scope == 'skip'
+        run: |
+          {
+            echo
+            echo "### Copilot usage metrics"
+            echo
+            echo "Live metrics were not requested. Select the \`organization\` or \`enterprise\` scope and configure the \`COPILOT_METRICS_TOKEN\` secret to include the latest 28-day report."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Download and summarize Copilot usage metrics
+        if: inputs.metrics_scope != 'skip'
         env:
           COPILOT_METRICS_TOKEN: ${{ secrets.COPILOT_METRICS_TOKEN }}
           METRICS_SCOPE: ${{ inputs.metrics_scope }}
@@ -186,10 +198,10 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Copilot usage report
+        if: inputs.metrics_scope != 'skip'
         uses: actions/upload-artifact@v6
         with:
           name: copilot-usage-metrics-${{ inputs.metrics_scope }}
           path: copilot-usage-metrics/
           if-no-files-found: error
           retention-days: 7
-
