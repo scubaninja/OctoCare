@@ -57,6 +57,8 @@ support-hub/
 8. GitHub Actions deploys the app
 9. The live site now supports image upload and better case triage
 
+For customers using GitHub Enterprise Cloud with data residency in the EU, see the [release demo workflow](docs/eu-data-residency-release-demo.md).
+
 ## Getting Started
 
 ```bash

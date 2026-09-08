@@ -1,0 +1,195 @@
+name: EU Data Residency Release Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      metrics_scope:
+        description: Copilot usage metrics scope
+        required: true
+        default: organization
+        type: choice
+        options:
+          - organization
+          - enterprise
+      enterprise_slug:
+        description: Enterprise slug (required for enterprise metrics)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  vulnerability-alerts: read
+
+jobs:
+  release-demo:
+    name: Security and Copilot metrics
+    runs-on: ubuntu-latest
+    env:
+      API_VERSION: 2026-03-10
+
+    steps:
+      - name: Introduce the EU data residency demo
+        run: |
+          {
+            echo "## GitHub releases for EU data residency"
+            echo
+            echo "This run demonstrates tenant-aware API access, least-privilege Dependabot alert access, and Copilot usage reporting."
+            echo
+            echo "| Capability | Demo signal |"
+            echo "| --- | --- |"
+            echo "| GitHub Enterprise Cloud with data residency | Requests use \`github.api_url\`, which resolves to the current tenant API host. |"
+            echo "| Dependabot alerts in Actions | The job has only \`vulnerability-alerts: read\` access. |"
+            echo "| Copilot usage metrics | The latest 28-day organization or enterprise report is summarized and retained as an artifact. |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Summarize open Dependabot alerts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          response_file="$RUNNER_TEMP/dependabot-alerts.json"
+          status=$(curl --silent --show-error \
+            --output "$response_file" \
+            --write-out "%{http_code}" \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: $API_VERSION" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100")
+
+          if [[ "$status" != "200" ]]; then
+            echo "::error::Dependabot alerts request failed with HTTP $status."
+            cat "$response_file"
+            exit 1
+          fi
+
+          total=$(jq 'length' "$response_file")
+          critical=$(jq '[.[] | select(.security_advisory.severity == "critical")] | length' "$response_file")
+          high=$(jq '[.[] | select(.security_advisory.severity == "high")] | length' "$response_file")
+          moderate=$(jq '[.[] | select(.security_advisory.severity == "moderate")] | length' "$response_file")
+          low=$(jq '[.[] | select(.security_advisory.severity == "low")] | length' "$response_file")
+
+          {
+            echo
+            echo "### Dependabot alerts"
+            echo
+            echo "Showing up to 100 open alerts for \`${{ github.repository }}\`."
+            echo
+            echo "| Total | Critical | High | Moderate | Low |"
+            echo "| ---: | ---: | ---: | ---: | ---: |"
+            echo "| $total | $critical | $high | $moderate | $low |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$total" -gt 0 ]]; then
+            {
+              echo
+              echo "| Package | Ecosystem | Severity | Manifest |"
+              echo "| --- | --- | --- | --- |"
+              jq -r '
+                .[:10][] |
+                "| \(.dependency.package.name) | \(.dependency.package.ecosystem) | \(.security_advisory.severity) | \(.dependency.manifest_path) |"
+              ' "$response_file"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Download and summarize Copilot usage metrics
+        env:
+          COPILOT_METRICS_TOKEN: ${{ secrets.COPILOT_METRICS_TOKEN }}
+          METRICS_SCOPE: ${{ inputs.metrics_scope }}
+          ENTERPRISE_SLUG: ${{ inputs.enterprise_slug }}
+          ORGANIZATION: ${{ github.repository_owner }}
+        run: |
+          if [[ -z "$COPILOT_METRICS_TOKEN" ]]; then
+            echo "::error::Configure the COPILOT_METRICS_TOKEN secret with permission to view Copilot usage metrics."
+            exit 1
+          fi
+
+          if [[ "$METRICS_SCOPE" == "enterprise" ]]; then
+            if [[ -z "$ENTERPRISE_SLUG" ]]; then
+              echo "::error::enterprise_slug is required when metrics_scope is enterprise."
+              exit 1
+            fi
+            endpoint="enterprises/$ENTERPRISE_SLUG/copilot/metrics/reports/enterprise-28-day/latest"
+            scope_label="Enterprise \`$ENTERPRISE_SLUG\`"
+          else
+            endpoint="orgs/$ORGANIZATION/copilot/metrics/reports/organization-28-day/latest"
+            scope_label="Organization \`$ORGANIZATION\`"
+          fi
+
+          metadata_file="$RUNNER_TEMP/copilot-metrics-metadata.json"
+          status=$(curl --silent --show-error \
+            --output "$metadata_file" \
+            --write-out "%{http_code}" \
+            --header "Authorization: Bearer $COPILOT_METRICS_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: $API_VERSION" \
+            "${{ github.api_url }}/$endpoint")
+
+          if [[ "$status" != "200" ]]; then
+            echo "::error::Copilot usage metrics request failed with HTTP $status."
+            jq 'del(.download_links)' "$metadata_file" 2>/dev/null || cat "$metadata_file"
+            exit 1
+          fi
+
+          mkdir -p copilot-usage-metrics
+          index=0
+          while IFS= read -r download_url; do
+            index=$((index + 1))
+            curl --fail-with-body --silent --show-error --location \
+              --output "copilot-usage-metrics/part-$index.ndjson" \
+              "$download_url"
+          done < <(jq -r '.download_links[]' "$metadata_file")
+
+          if [[ "$index" -eq 0 ]]; then
+            echo "::error::The Copilot usage metrics response did not contain any download links."
+            exit 1
+          fi
+
+          jq -s '
+            [ .[] | .day_totals[]? ] |
+            sort_by(.day) |
+            last
+          ' copilot-usage-metrics/*.ndjson > copilot-usage-metrics/latest-day.json
+
+          if jq -e '. == null' copilot-usage-metrics/latest-day.json > /dev/null; then
+            echo "::error::The downloaded report did not contain aggregated daily metrics."
+            exit 1
+          fi
+
+          report_start=$(jq -r '.report_start_day' "$metadata_file")
+          report_end=$(jq -r '.report_end_day' "$metadata_file")
+          latest_day=$(jq -r '.day' copilot-usage-metrics/latest-day.json)
+          daily_active=$(jq -r '.daily_active_users // 0' copilot-usage-metrics/latest-day.json)
+          weekly_active=$(jq -r '.weekly_active_users // 0' copilot-usage-metrics/latest-day.json)
+          monthly_active=$(jq -r '.monthly_active_users // 0' copilot-usage-metrics/latest-day.json)
+          interactions=$(jq -r '.user_initiated_interaction_count // 0' copilot-usage-metrics/latest-day.json)
+          generated=$(jq -r '.code_generation_activity_count // 0' copilot-usage-metrics/latest-day.json)
+          accepted=$(jq -r '.code_acceptance_activity_count // 0' copilot-usage-metrics/latest-day.json)
+          loc_added=$(jq -r '.loc_added_sum // 0' copilot-usage-metrics/latest-day.json)
+          reviewed_prs=$(jq -r '.pull_requests.total_reviewed_by_copilot // 0' copilot-usage-metrics/latest-day.json)
+
+          {
+            echo
+            echo "### Copilot usage metrics"
+            echo
+            echo "**Scope:** $scope_label"
+            echo
+            echo "**Report window:** $report_start to $report_end"
+            echo
+            echo "**Latest processed day:** $latest_day"
+            echo
+            echo "| Daily active users | Weekly active users | Monthly active users |"
+            echo "| ---: | ---: | ---: |"
+            echo "| $daily_active | $weekly_active | $monthly_active |"
+            echo
+            echo "| User interactions | Generations | Acceptances | Lines added | PRs reviewed by Copilot |"
+            echo "| ---: | ---: | ---: | ---: | ---: |"
+            echo "| $interactions | $generated | $accepted | $loc_added | $reviewed_prs |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Copilot usage report
+        uses: actions/upload-artifact@v6
+        with:
+          name: copilot-usage-metrics-${{ inputs.metrics_scope }}
+          path: copilot-usage-metrics/
+          if-no-files-found: error
+          retention-days: 7
+

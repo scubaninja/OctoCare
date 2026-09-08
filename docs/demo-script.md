@@ -4,6 +4,8 @@
 
 > Titan Limited wants to reduce support load, improve customer experience, and bring AI into the software delivery process safely — using GitHub from idea to production.
 
+For a release-focused enterprise presentation, use the [GitHub EU Data Residency Release Demo](eu-data-residency-release-demo.md). It covers issue fields, Copilot governance and code review, Code Quality trends, Dependabot agent remediation, Actions integration, and Copilot usage metrics.
+
 ## Act 1: The Customer Experience
 
 1. Open the OctoCare customer portal
