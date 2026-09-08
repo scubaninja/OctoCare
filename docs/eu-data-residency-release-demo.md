@@ -15,7 +15,7 @@ Prepare these items before the customer session:
 3. Open a pull request that changes normal application code and a path configured in Copilot content exclusions. Include a small maintainability issue that Code Quality can identify.
 4. Keep at least one open Dependabot alert that can be assigned to Copilot for remediation.
 5. Configure an enterprise-managed default model that is available in the EU region. Recently released models can take additional time to reach data-resident regions, and Gemini models were not supported at the April 2026 data residency launch.
-6. Add a `COPILOT_METRICS_TOKEN` Actions secret. Use a token that can view organization Copilot metrics (`read:org`) or enterprise Copilot metrics (`read:enterprise` or `manage_billing:copilot`). Enable the **Copilot usage metrics** policy everywhere.
+6. To include live Copilot usage data, add a `COPILOT_METRICS_TOKEN` Actions secret. Use a token that can view organization Copilot metrics (`read:org`) or enterprise Copilot metrics (`read:enterprise` or `manage_billing:copilot`). Enable the **Copilot usage metrics** policy everywhere. The rest of the workflow can run without this secret.
 
 Do not use production secrets or customer data in the demo repository.
 
@@ -79,10 +79,11 @@ Then run the **EU Data Residency Release Demo** workflow. Its `GITHUB_TOKEN` rec
 
 In the workflow dispatch form:
 
-1. Select `organization` to report on the repository owner, or select `enterprise` and enter the enterprise slug.
-2. Run the workflow.
-3. Open the job summary and show daily, weekly, and monthly active users; user interactions; generations; acceptances; lines added; and pull requests reviewed by Copilot.
-4. Download the seven-day artifact containing the source NDJSON partitions and `latest-day.json`.
+1. The default `skip` scope completes the release and Dependabot demonstration without requiring a metrics token.
+2. For live usage data, select `organization` to report on the repository owner, or select `enterprise` and enter the enterprise slug.
+3. Run the workflow.
+4. Open the job summary and show daily, weekly, and monthly active users; user interactions; generations; acceptances; lines added; and pull requests reviewed by Copilot.
+5. Download the seven-day artifact containing the source NDJSON partitions and `latest-day.json`.
 
 The workflow uses `${{ github.api_url }}`, so requests resolve to the API host for the current GitHub tenant rather than hard-coding `api.github.com`. The metrics token is separate from `GITHUB_TOKEN` because organization and enterprise reporting requires an authorized administrative or custom metrics role.
 
@@ -112,4 +113,3 @@ Connect the flow back to one operating model:
 - [Actions `vulnerability-alerts` permission](https://github.blog/changelog/2026-09-03-github-actions-early-september-2026-updates/)
 - [REST API endpoints for Copilot usage metrics](https://docs.github.com/en/enterprise-cloud@latest/rest/copilot/copilot-usage-metrics)
 - [Copilot usage metrics field reference](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/copilot-usage-metrics/copilot-usage-metrics)
-
