@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenText, Loader2, Search } from 'lucide-react';
+import { BookOpenText, Download, Loader2, Search } from 'lucide-react';
 
 import { apiGet } from '@/lib/api';
+import { downloadCsv } from '@/lib/csv';
+import { buildKnowledgeBaseExportFilename, createKnowledgeArticleCsv } from '@/lib/knowledge-base-export';
 import { normalizeKnowledgeArticles } from '@/lib/normalize';
 import type { KnowledgeArticle } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
@@ -14,6 +16,7 @@ export default function KnowledgeBasePage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [exportStatus, setExportStatus] = useState('');
 
   useEffect(() => {
     async function loadArticles() {
@@ -43,6 +46,19 @@ export default function KnowledgeBasePage() {
 
   const selectedArticle = filteredArticles.find((article) => article.id === selectedArticleId) ?? filteredArticles[0] ?? null;
 
+  const exportDisabled = loading || Boolean(error) || filteredArticles.length === 0;
+
+  function handleExport() {
+    if (exportDisabled) return;
+
+    const filename = buildKnowledgeBaseExportFilename(search);
+    const csvContent = createKnowledgeArticleCsv(filteredArticles);
+    downloadCsv(filename, csvContent);
+
+    const count = filteredArticles.length;
+    setExportStatus(`Exported ${count} article${count === 1 ? '' : 's'} as ${filename}.`);
+  }
+
   return (
     <div className="space-y-8">
       <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
@@ -53,15 +69,37 @@ export default function KnowledgeBasePage() {
             Search how-to articles, troubleshooting content, and best practices. Results update instantly as you type.
           </p>
         </div>
-        <div className="relative mt-6">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by keyword, topic, or category"
-            className="w-full rounded-full border border-slate-200 py-3 pl-11 pr-4 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
-          />
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <label htmlFor="knowledge-base-search" className="sr-only">
+              Search knowledge base articles
+            </label>
+            <input
+              id="knowledge-base-search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by keyword, topic, or category"
+              className="w-full rounded-full border border-slate-200 py-3 pl-11 pr-4 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exportDisabled}
+            aria-describedby="knowledge-base-export-hint"
+            className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary-200 hover:text-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-200 disabled:hover:text-slate-700 sm:w-auto"
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+            Export CSV
+          </button>
         </div>
+        <p id="knowledge-base-export-hint" className="sr-only">
+          Exports the articles currently displayed below, including any active search filter, as a CSV file.
+        </p>
+        <p role="status" aria-live="polite" className="sr-only">
+          {exportStatus}
+        </p>
       </section>
 
       {loading ? (
