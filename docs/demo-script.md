@@ -54,9 +54,9 @@ For a release-focused enterprise presentation, use the [GitHub EU Data Residency
 
 1. PR is approved and merged
 2. GitHub Actions CI runs: build, test, security scan
-3. Deployment workflow deploys to Azure
-4. Return to the customer portal — photo upload is now available
-5. Customer uploads damage photos to their case
+3. The CI/CD workflow shows the simulated development and production deployment gates
+4. Explain that real Azure image publishing and deployment automation are the next implementation step
+5. If a separately deployed demo environment is available, return to the customer portal and verify the feature
 
 ## Key Messages
 

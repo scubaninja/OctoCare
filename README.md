@@ -62,23 +62,33 @@ For customers using GitHub Enterprise Cloud with data residency in the EU, see t
 ## Getting Started
 
 ```bash
-docker-compose up
+docker compose up --build
 ```
 
-## Deployment
+The compose stack uses the local-only PostgreSQL password `octocare_dev`.
+Apply `db/migrations/001_initial.sql` and `db/seed/seed.sql` to the `octocare`
+database before using flows that read or write data. Set
+`AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_KEY` only when exercising AI
+features.
 
-The `Deploy` workflow reads its Azure credentials and application secrets from
-the `production` GitHub environment. Configure these environment secrets before
-running the workflow:
+## Build and Delivery
 
-- `AZURE_CLIENT_ID`
-- `AZURE_TENANT_ID`
-- `AZURE_SUBSCRIPTION_ID`
-- `DATABASE_ADMIN_PASSWORD`
-- `OPENAI_API_KEY`
+See [Build and delivery](docs/build-and-delivery.md) for:
 
-The Azure identity must have a federated credential for this repository and
-permission to provision the resources defined in `infra/terraform`.
+- how the monorepo and CI/CD workflow are structured;
+- local and pull-request validation commands;
+- a decision guide for Docker Compose, Railway, and Azure;
+- the current deployment automation gaps; and
+- credential and secret-handling requirements.
+
+The checked-in `CI/CD Workflow` validates and containerizes all four
+applications. Its development and production deployment jobs are simulations;
+it does not currently authenticate to Azure, push images, run Terraform, or
+deploy application revisions.
+
+The Azure target architecture is defined in `infra/terraform`. Provisioning it
+is currently a manual operator task and requires separately configured Terraform
+state plus sensitive variable values.
 
 ### Railway
 
