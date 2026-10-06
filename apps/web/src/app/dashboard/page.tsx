@@ -1,21 +1,34 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertTriangle, BarChart3, Clock3, Loader2, Ticket } from 'lucide-react';
+import { AlertTriangle, BarChart3, Clock3, Download, Loader2, Ticket } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { PriorityBadge } from '@/components/PriorityBadge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { apiGet } from '@/lib/api';
+import { createSupportCasesCsv, filterSupportCases } from '@/lib/dashboard-export.mjs';
 import { normalizeSupportCases } from '@/lib/normalize';
 import type { DashboardStats, SupportCase } from '@/lib/types';
 import { formatDateTime, titleCase } from '@/lib/utils';
+
+type CaseFilters = {
+  status: string;
+  priority: string;
+  category: string;
+};
 
 const defaultStats: DashboardStats = {
   totalCases: 0,
   openCases: 0,
   criticalCases: 0,
   slaAtRisk: 0,
+};
+
+const defaultFilters: CaseFilters = {
+  status: '',
+  priority: '',
+  category: '',
 };
 
 function getSlaClass(value?: string) {
@@ -32,6 +45,19 @@ export default function DashboardPage() {
   const [cases, setCases] = useState<SupportCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filters, setFilters] = useState<CaseFilters>(defaultFilters);
+
+  const filteredCases = filterSupportCases(cases, filters);
+
+  function exportFilteredCases() {
+    const blob = new Blob([createSupportCasesCsv(filteredCases)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `octocare-cases-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   useEffect(() => {
     async function loadDashboard() {
@@ -95,9 +121,41 @@ export default function DashboardPage() {
           </section>
 
           <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-6 py-5">
-              <h2 className="text-xl font-semibold text-slate-950">Case queue</h2>
-              <p className="mt-1 text-sm text-slate-500">Click a row to inspect full case details, AI summaries, and audit history.</p>
+            <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">Case queue</h2>
+                <p className="mt-1 text-sm text-slate-500">Click a row to inspect full case details, AI summaries, and audit history.</p>
+              </div>
+              <button
+                type="button"
+                onClick={exportFilteredCases}
+                aria-label="Export filtered cases as CSV"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-700 transition hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+              >
+                <Download aria-hidden="true" className="h-4 w-4" />
+                Export CSV
+              </button>
+            </div>
+
+            <div className="grid gap-4 border-b border-slate-100 bg-slate-50/70 px-6 py-4 sm:grid-cols-3">
+              {([
+                ['status', 'Status', 'All statuses', [...new Set(cases.map((supportCase) => supportCase.status))].sort()],
+                ['priority', 'Priority', 'All priorities', [...new Set(cases.map((supportCase) => supportCase.priority))].sort()],
+                ['category', 'Category', 'All categories', [...new Set(cases.map((supportCase) => supportCase.category))].sort()],
+              ] as const).map(([key, label, allLabel, filterOptions]) => (
+                <label key={key} htmlFor={`case-filter-${key}`} className="text-sm font-medium text-slate-700">
+                  {label}
+                  <select
+                    id={`case-filter-${key}`}
+                    value={filters[key]}
+                    onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))}
+                    className="mt-1 block min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                  >
+                    <option value="">{allLabel}</option>
+                    {filterOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </label>
+              ))}
             </div>
 
             <div className="overflow-x-auto">
@@ -114,8 +172,8 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {cases.length ? (
-                    cases.map((supportCase) => (
+                  {filteredCases.length ? (
+                    filteredCases.map((supportCase) => (
                       <tr
                         key={supportCase.id}
                         onClick={() => router.push(`/dashboard/cases/${supportCase.id}`)}
@@ -142,7 +200,7 @@ export default function DashboardPage() {
                   ) : (
                     <tr>
                       <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
-                        No cases are currently available in the queue.
+                        {cases.length ? 'No cases match the selected filters.' : 'No cases are currently available in the queue.'}
                       </td>
                     </tr>
                   )}
