@@ -44,6 +44,7 @@ support-hub/
 - Get suggested next steps
 - Escalate issues
 - Track SLA status
+- Filter the case queue by status, priority, and category, then export the filtered cases as CSV
 
 ## Demo Storyline
 
